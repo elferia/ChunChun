@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         ChunChun
 // @namespace    https://github.com/elferia/ChunChun
-// @version      0.1
+// @version      0.2
 // @description  chunithm-netから譜面別レーティングを計算する
 // @author       elferia
 // @match        https://chunithm-net.com/*
@@ -157,6 +157,23 @@
         }
 
         document.body.insertBefore(table, document.body.firstChild);
+        button.addEventListener('click', getCopierToClipboard(table));
+        button.textContent = 'Copy to Clipboard';
+        button.removeAttribute('disabled');
+    };
+
+    // クリップボードにコピーする
+    var getCopierToClipboard = function(copiedNode) {
+        return function() {
+            var range = document.createRange();
+            range.selectNode(copiedNode);
+
+            var selection = getSelection();
+            selection.removeAllRanges();
+            selection.addRange(range);
+            document.execCommand('copy');
+            selection.removeAllRanges();
+        };
     };
 
     var musicData = [];
@@ -165,7 +182,10 @@
     var button = document.createElement('button');
     document.body.insertBefore(button, document.body.firstChild);
     button.textContent = 'Calculate Ratings!';
-    button.addEventListener('click', function() {
+    button.addEventListener('click', (function() {return function f() {
+        this.removeEventListener('click', f); // エラーになっても知らない
+        this.setAttribute('disabled', 'disabled');
+        this.textContent = 'Calculating...';
         fetchLevelRecord(12);
-    });
+    };})());
 })();

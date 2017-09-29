@@ -173,11 +173,14 @@
                 });
             });
         }
-        p.then(() => {
-            return fetchDLevel();
-        })
+
+        var q = fetchDLevel()
         .then((XHR) => {
             extractDLevel(XHR.response);
+        });
+
+        Promise.all([p, q])
+        .then(() => {
             calcRatings();
             musicData.sort(function(a, b) {
                 if (isNaN(a.rating)) {

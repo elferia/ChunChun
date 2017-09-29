@@ -15,10 +15,21 @@
     // 指定したレベルの譜面のスコアを取りに行く
     // と見せかけて、処理のエントリポイントになってしまった
     var fetchLevelRecord = function(level) {
-        var XHR = new XMLHttpRequest();
-        XHR.addEventListener('load', function() {
+        new Promise((resolve, reject) => {
+            var XHR = new XMLHttpRequest();
+            XHR.addEventListener('load', function() {resolve(this);});
+            // エラーを踏んだらサヨウナラ
+            XHR.open('POST', 'https://chunithm-net.com/mobile/MusicLevel.html');
+            XHR.responseType = 'document';
+
+            var FD = new FormData();
+            FD.append('selected', level);
+            FD.append('changeSelect', 'changeSelect');
+            XHR.send(FD);
+        })
+        .then(function(XHR) {
             // TOBE: 続く処理を外で渡せるようにする
-            extractScore(this.response);
+            extractScore(XHR.response);
 
             if (level == 14) {
                 fetchDLevel();
@@ -28,14 +39,6 @@
             // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
             fetchLevelRecord(level + 1);
         });
-        // エラーを踏んだらサヨウナラ
-        XHR.open('POST', 'https://chunithm-net.com/mobile/MusicLevel.html');
-        XHR.responseType = 'document';
-
-        var FD = new FormData();
-        FD.append('selected', level);
-        FD.append('changeSelect', 'changeSelect');
-        XHR.send(FD);
     };
 
     // レコード一覧ページから譜面のスコアを抽出してmusicDataに突っ込む

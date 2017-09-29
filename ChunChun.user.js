@@ -13,9 +13,8 @@
     'use strict';
 
     // 指定したレベルの譜面のスコアを取りに行く
-    // と見せかけて、処理のエントリポイントになってしまった
     var fetchLevelRecord = function(level) {
-        new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => {
             var XHR = new XMLHttpRequest();
             XHR.addEventListener('load', function() {resolve(this);});
             // エラーを踏んだらサヨウナラ
@@ -26,18 +25,6 @@
             FD.append('selected', level);
             FD.append('changeSelect', 'changeSelect');
             XHR.send(FD);
-        })
-        .then(function(XHR) {
-            // TOBE: 続く処理を外で渡せるようにする
-            extractScore(XHR.response);
-
-            if (level == 14) {
-                fetchDLevel();
-                return;
-            }
-
-            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
-            fetchLevelRecord(level + 1);
         });
     };
 
@@ -189,6 +176,20 @@
         this.removeEventListener('click', f); // エラーになっても知らない
         this.setAttribute('disabled', 'disabled');
         this.textContent = 'Calculating...';
-        fetchLevelRecord(12);
+
+        // awaitの方がきれいに書けるけど、tampermonkey editor上でエラーが出るのでPromiseで頑張る
+        var p = Promise.resolve();
+        for (let i = 12; i < 15; ++i) {
+            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
+            p = p.then(() => {
+                return fetchLevelRecord(i)
+                .then(XHR => {
+                    extractScore(XHR.response);
+                });
+            });
+        }
+        p.then(() => {
+            fetchDLevel();
+        });
     };})());
 })();

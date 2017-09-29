@@ -13,29 +13,23 @@
     'use strict';
 
     // 指定したレベルの譜面のスコアを取りに行く
-    // と見せかけて、処理のエントリポイントになってしまった
     var fetchLevelRecord = function(level) {
-        var XHR = new XMLHttpRequest();
-        XHR.addEventListener('load', function() {
-            // TOBE: 続く処理を外で渡せるようにする
-            extractScore(this.response);
-
-            if (level == 14) {
-                fetchDLevel();
-                return;
-            }
-
-            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
-            fetchLevelRecord(level + 1);
-        });
-        // エラーを踏んだらサヨウナラ
-        XHR.open('POST', 'https://chunithm-net.com/mobile/MusicLevel.html');
-        XHR.responseType = 'document';
-
         var FD = new FormData();
         FD.append('selected', level);
         FD.append('changeSelect', 'changeSelect');
-        XHR.send(FD);
+        return getXHRPromise('https://chunithm-net.com/mobile/MusicLevel.html', FD);
+    };
+
+    // XHR Promiseの再発明
+    var getXHRPromise = function(url, formData) {
+        return new Promise((resolve, reject) => {
+            var XHR = new XMLHttpRequest();
+            XHR.addEventListener('load', function() {resolve(this);});
+            // エラーを踏んだらサヨウナラ
+            XHR.open(formData ? 'POST' : 'GET', url);
+            XHR.responseType = 'document';
+            XHR.send(formData ? formData : null);
+        });
     };
 
     // レコード一覧ページから譜面のスコアを抽出してmusicDataに突っ込む
@@ -54,30 +48,8 @@
     };
 
     // CHUNITHM【チュウニズム】攻略wikiから譜面定数を引っ張ってくる
-    // と見せかけて、処理の後半部分を担っている
     var fetchDLevel = function() {
-        var XHR = new XMLHttpRequest();
-        XHR.addEventListener('load', function() {
-            // TOBE: 続く処理を外で渡せるようにする
-            extractDLevel(this.response);
-            calcRatings();
-            musicData.sort(function(a, b) {
-                if (isNaN(a.rating)) {
-                    return -1;
-                }
-
-                if (isNaN(b.rating)) {
-                    return 1;
-                }
-
-                return b.rating - a.rating;
-            });
-            showMusicData();
-        });
-        // エラーを踏んだらサヨウナラ
-        XHR.open('GET', 'https://cors-anywhere.herokuapp.com/https://chunithm.gamerch.com/CHUNITHM%20STAR%20%E6%A5%BD%E6%9B%B2%E4%B8%80%E8%A6%A7%EF%BC%88Lv%E9%A0%86%EF%BC%89');
-        XHR.responseType = 'document';
-        XHR.send();
+        return getXHRPromise('https://cors-anywhere.herokuapp.com/https://chunithm.gamerch.com/CHUNITHM%20STAR%20%E6%A5%BD%E6%9B%B2%E4%B8%80%E8%A6%A7%EF%BC%88Lv%E9%A0%86%EF%BC%89');
     };
 
     // CHUNITHM【チュウニズム】攻略wikiページから譜面定数を抽出してdLevelOfに格納する
@@ -186,6 +158,39 @@
         this.removeEventListener('click', f); // エラーになっても知らない
         this.setAttribute('disabled', 'disabled');
         this.textContent = 'Calculating...';
-        fetchLevelRecord(12);
+
+        // awaitの方がきれいに書けるけど、tampermonkey editor上でエラーが出るのでPromiseで頑張る
+        var p = Promise.resolve();
+        for (let i = 12; i < 15; ++i) {
+            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
+            p = p.then(() => {
+                return fetchLevelRecord(i)
+                .then(XHR => {
+                    extractScore(XHR.response);
+                });
+            });
+        }
+
+        var q = fetchDLevel()
+        .then((XHR) => {
+            extractDLevel(XHR.response);
+        });
+
+        Promise.all([p, q])
+        .then(() => {
+            calcRatings();
+            musicData.sort(function(a, b) {
+                if (isNaN(a.rating)) {
+                    return -1;
+                }
+
+                if (isNaN(b.rating)) {
+                    return 1;
+                }
+
+                return b.rating - a.rating;
+            });
+            showMusicData();
+        });
     };})());
 })();

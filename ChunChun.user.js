@@ -46,10 +46,17 @@
     // CHUNITHM【チュウニズム】攻略wikiから譜面定数を引っ張ってくる
     // と見せかけて、処理の後半部分を担っている
     var fetchDLevel = function() {
-        var XHR = new XMLHttpRequest();
-        XHR.addEventListener('load', function() {
+        new Promise((resolve, reject) => {
+            var XHR = new XMLHttpRequest();
+            XHR.addEventListener('load', function() {resolve(this);});
+            // エラーを踏んだらサヨウナラ
+            XHR.open('GET', 'https://cors-anywhere.herokuapp.com/https://chunithm.gamerch.com/CHUNITHM%20STAR%20%E6%A5%BD%E6%9B%B2%E4%B8%80%E8%A6%A7%EF%BC%88Lv%E9%A0%86%EF%BC%89');
+            XHR.responseType = 'document';
+            XHR.send();
+        })
+        .then((XHR) => {
             // TOBE: 続く処理を外で渡せるようにする
-            extractDLevel(this.response);
+            extractDLevel(XHR.response);
             calcRatings();
             musicData.sort(function(a, b) {
                 if (isNaN(a.rating)) {
@@ -64,10 +71,6 @@
             });
             showMusicData();
         });
-        // エラーを踏んだらサヨウナラ
-        XHR.open('GET', 'https://cors-anywhere.herokuapp.com/https://chunithm.gamerch.com/CHUNITHM%20STAR%20%E6%A5%BD%E6%9B%B2%E4%B8%80%E8%A6%A7%EF%BC%88Lv%E9%A0%86%EF%BC%89');
-        XHR.responseType = 'document';
-        XHR.send();
     };
 
     // CHUNITHM【チュウニズム】攻略wikiページから譜面定数を抽出してdLevelOfに格納する

@@ -1,14 +1,3 @@
-// ==UserScript==
-// @name         ChunChun
-// @namespace    https://github.com/elferia/ChunChun
-// @version      0.2
-// @description  chunithm-netから譜面別レーティングを計算する
-// @author       elferia
-// @match        https://chunithm-net.com/*
-// @grant        GM_log
-// @run-at document-body
-// ==/UserScript==
-
 (function() {
     'use strict';
 
@@ -129,68 +118,60 @@
         }
 
         document.body.insertBefore(table, document.body.firstChild);
-        button.addEventListener('click', getCopierToClipboard(table));
-        button.textContent = 'Copy to Clipboard';
-        button.removeAttribute('disabled');
+        table.addEventListener('click', getCopierToClipboard(table));
     };
 
     // クリップボードにコピーする
     var getCopierToClipboard = function(copiedNode) {
         return function() {
+            var selection = getSelection();
+            if (selection.containsNode(copiedNode)) {
+                return;
+            }
+            
             var range = document.createRange();
             range.selectNode(copiedNode);
 
-            var selection = getSelection();
             selection.removeAllRanges();
             selection.addRange(range);
             document.execCommand('copy');
-            selection.removeAllRanges();
         };
     };
 
     var musicData = [];
     var dLevelOf = {};
 
-    var button = document.createElement('button');
-    document.body.insertBefore(button, document.body.firstChild);
-    button.textContent = 'Calculate Ratings!';
-    button.addEventListener('click', (function() {return function f() {
-        this.removeEventListener('click', f); // エラーになっても知らない
-        this.setAttribute('disabled', 'disabled');
-        this.textContent = 'Calculating...';
-
-        // awaitの方がきれいに書けるけど、tampermonkey editor上でエラーが出るのでPromiseで頑張る
-        var p = Promise.resolve();
-        for (let i = 12; i < 15; ++i) {
-            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
-            p = p.then(() => {
-                return fetchLevelRecord(i)
-                .then(XHR => {
-                    extractScore(XHR.response);
-                });
+    // awaitの方がきれいに書けるけど、tampermonkey editor上でエラーが出るのでPromiseで頑張る
+    var p = Promise.resolve();
+    for (let i = 12; i < 15; ++i) {
+        // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
+        p = p.then(() => {
+            return fetchLevelRecord(i)
+            .then(XHR => {
+                extractScore(XHR.response);
             });
-        }
-
-        var q = fetchDLevel()
-        .then((XHR) => {
-            extractDLevel(XHR.response);
         });
+    }
 
-        Promise.all([p, q])
-        .then(() => {
-            calcRatings();
-            musicData.sort(function(a, b) {
-                if (isNaN(a.rating)) {
-                    return -1;
-                }
+    var q = fetchDLevel()
+    .then((XHR) => {
+        extractDLevel(XHR.response);
+    });
 
-                if (isNaN(b.rating)) {
-                    return 1;
-                }
+    Promise.all([p, q])
+    .then(() => {
+        calcRatings();
+        musicData.sort(function(a, b) {
+            if (isNaN(a.rating)) {
+                return -1;
+            }
 
-                return b.rating - a.rating;
-            });
-            showMusicData();
+            if (isNaN(b.rating)) {
+                return 1;
+            }
+
+            return b.rating - a.rating;
         });
-    };})());
+        showMusicData();
+    });
 })();

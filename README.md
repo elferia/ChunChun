@@ -17,7 +17,7 @@ Chrome 61+
 次にブックマークを編集して、リンクを以下のテキストに置き換え
 
 ```
-javascript:(function(){var a=document.createElement('script');a.src='https://rawgit.com/elferia/ChunChun/master/ChunChun.user.js';document.body.appendChild(a)})();
+javascript:(function(){var a=document.createElement('script');a.src='https://rawgit.com/elferia/ChunChun/master/ChunChun.js';document.body.appendChild(a)})();
 ```
 
 ## 使い方

@@ -6,6 +6,9 @@ chunithm-netから譜面別レーティングを計算するbookmarklet
 
 ![](https://raw.githubusercontent.com/elferia/ChunChun/master/abstract.PNG)
 
+## 動作保証環境
+Chrome 61+
+
 ## インストール
 まず下記リンクをブックマークツールバーにD&D
 

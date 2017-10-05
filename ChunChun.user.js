@@ -1,4 +1,4 @@
-(function() {
+(async function() {
     'use strict';
 
     // 指定したレベルの譜面のスコアを取りに行く
@@ -141,37 +141,31 @@
     var musicData = [];
     var dLevelOf = {};
 
-    // awaitの方がきれいに書けるけど、tampermonkey editor上でエラーが出るのでPromiseで頑張る
-    var p = Promise.resolve();
-    for (let i = 12; i < 15; ++i) {
-        // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
-        p = p.then(() => {
-            return fetchLevelRecord(i)
-            .then(XHR => {
-                extractScore(XHR.response);
-            });
-        });
-    }
+    var p = (async function() {
+        for (let i = 12; i < 15; ++i) {
+            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
+            var XHR = await fetchLevelRecord(i);
+            extractScore(XHR.response);
+        }
+    })();
 
-    var q = fetchDLevel()
-    .then((XHR) => {
+    var q = (async function () {
+        var XHR = await fetchDLevel();
         extractDLevel(XHR.response);
+    })();
+
+    await Promise.all([p, q]);
+    calcRatings();
+    musicData.sort(function(a, b) {
+        if (isNaN(a.rating)) {
+            return -1;
+        }
+
+        if (isNaN(b.rating)) {
+            return 1;
+        }
+
+        return b.rating - a.rating;
     });
-
-    Promise.all([p, q])
-    .then(() => {
-        calcRatings();
-        musicData.sort(function(a, b) {
-            if (isNaN(a.rating)) {
-                return -1;
-            }
-
-            if (isNaN(b.rating)) {
-                return 1;
-            }
-
-            return b.rating - a.rating;
-        });
-        showMusicData();
-    });
+    showMusicData();
 })();

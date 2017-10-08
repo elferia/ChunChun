@@ -1,0 +1,22 @@
+{
+  "name": "chunchun",
+  "version": "1.0.0",
+  "description": "chunithm-netから譜面別レーティングを計算するbookmarklet",
+  "main": "ChunChun.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/elferia/ChunChun.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/elferia/ChunChun/issues"
+  },
+  "homepage": "https://github.com/elferia/ChunChun#readme",
+  "devDependencies": {
+    "eslint": "^4.8.0"
+  }
+}

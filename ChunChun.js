@@ -13,11 +13,11 @@
     var getXHRPromise = function(url, formData) {
         return new Promise((resolve, reject) => {
             var XHR = new XMLHttpRequest();
-            XHR.addEventListener('load', function() {resolve(this);});
+            XHR.addEventListener('load', function() { resolve(this); });
             // エラーを踏んだらサヨウナラ
             XHR.open(formData ? 'POST' : 'GET', url);
             XHR.responseType = 'document';
-            XHR.send(formData ? formData : null);
+            XHR.send(formData || null);
         });
     };
 
@@ -50,13 +50,13 @@
 
             let difficulty = -1;
             for (let row of tableHeading.nextElementSibling.querySelectorAll('tr')) {
-                let is_difficulty_column = row.childElementCount == 1 && row.firstElementChild.getAttribute('data-col') == '0';
-                let is_music_row = row.childElementCount == 3;
+                let isDifficultyColumn = row.childElementCount === 1 && row.firstElementChild.getAttribute('data-col') === '0';
+                let isMusicRow = row.childElementCount === 3;
 
-                if (is_difficulty_column) {
-                    difficulty = row.innerText == 'EXP' ? 2 : 3; // Lv11以上にADVANCEDが来たら終わる
+                if (isDifficultyColumn) {
+                    difficulty = row.innerText === 'EXP' ? 2 : 3; // Lv11以上にADVANCEDが来たら終わる
                 }
-                if (is_music_row) {
+                if (isMusicRow) {
                     let title = row.querySelector('[data-col="2"]').innerText;
                     let dLevel = row.querySelector('[data-col="4"]').innerText;
                     dLevelOf[canonicalize(title, difficulty)] = parseFloat(dLevel);
@@ -72,17 +72,17 @@
             if (data.score >= 1007500) {
                 bonus = 2;
             } else if (data.score >= 1005000) {
-                bonus = 1.5 + (data.score - 1005000)*10/50000;
+                bonus = 1.5 + (data.score - 1005000) * 10 / 50000;
             } else if (data.score >= 1000000) {
-                bonus = 1 + (data.score - 1000000)*5/50000;
+                bonus = 1 + (data.score - 1000000) * 5 / 50000;
             } else if (data.score >= 975000) {
-                bonus = (data.score - 975000)*2/50000;
+                bonus = (data.score - 975000) * 2 / 50000;
             } else if (data.score >= 950000) {
-                bonus = -1.5 + (data.score - 950000)*3/50000;
+                bonus = -1.5 + (data.score - 950000) * 3 / 50000;
             } else if (data.score >= 925000) {
-                bonus = -3 + (data.score - 925000)*3/50000;
+                bonus = -3 + (data.score - 925000) * 3 / 50000;
             } else {
-                bonus = -5 + (data.score - 900000)*4/50000;
+                bonus = -5 + (data.score - 900000) * 4 / 50000;
             }
 
             let dLevel = dLevelOf[canonicalize(data.title, data.difficulty)];
@@ -112,7 +112,7 @@
             table.appendChild(row);
 
             row.appendChild(createTdElement(data.title));
-            row.appendChild(createTdElement(data.difficulty == 2 ? 'EXPERT' : 'MASTER'));
+            row.appendChild(createTdElement(data.difficulty === 2 ? 'EXPERT' : 'MASTER'));
             row.appendChild(createTdElement(data.dLevel));
             row.appendChild(createTdElement(data.rating));
         }
@@ -128,7 +128,7 @@
             if (selection.containsNode(copiedNode)) {
                 return;
             }
-            
+
             var range = document.createRange();
             range.selectNode(copiedNode);
 
@@ -149,7 +149,7 @@
         }
     })();
 
-    var q = (async function () {
+    var q = (async function() {
         var XHR = await fetchDLevel();
         extractDLevel(XHR.response);
     })();

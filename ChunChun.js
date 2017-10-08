@@ -55,6 +55,26 @@
                 data.rating = Math.floor((dLevel + bonus) * 100) / 100;
             }
         }
+
+        get musicData() {
+            var p = (async function() {
+                for (let i = 12; i < 15; ++i) {
+                    // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
+                    var XHR = await fetchLevelRecord(i);
+                    extractScore(XHR.response);
+                }
+            })();
+
+            var q = (async () => {
+                var XHR = await fetchDLevel();
+                this.extractDLevel(XHR.response);
+            })();
+
+            return Promise.all([p, q])
+                .then(() => {
+                    this.calcRatings();
+                });
+        }
     }
 
     // 指定したレベルの譜面のスコアを取りに行く
@@ -146,22 +166,8 @@
 
     var musicData = [];
 
-    var p = (async function() {
-        for (let i = 12; i < 15; ++i) {
-            // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
-            var XHR = await fetchLevelRecord(i);
-            extractScore(XHR.response);
-        }
-    })();
-
     var collector = new PlayDataCollector();
-    var q = (async function() {
-        var XHR = await fetchDLevel();
-        collector.extractDLevel(XHR.response);
-    })();
-
-    await Promise.all([p, q]);
-    collector.calcRatings();
+    await collector.musicData;
     musicData.sort(function(a, b) {
         if (isNaN(a.rating)) {
             return -1;

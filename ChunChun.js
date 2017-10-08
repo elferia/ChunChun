@@ -4,6 +4,7 @@
     class PlayDataCollector {
         constructor() {
             this.dLevelOf = {};
+            this._musicData = [];
         }
 
         // CHUNITHM【チュウニズム】攻略wikiページから譜面定数を抽出してdLevelOfに格納する
@@ -32,7 +33,7 @@
 
         // musicDataとdLevelOfからレーティングを計算しmusicDataに格納する。合わせて譜面定数も格納する
         calcRatings() {
-            for (let data of musicData) {
+            for (let data of this._musicData) {
                 let bonus = 0;
                 if (data.score >= 1007500) {
                     bonus = 2;
@@ -57,11 +58,11 @@
         }
 
         get musicData() {
-            var p = (async function() {
+            var p = (async () => {
                 for (let i = 12; i < 15; ++i) {
                     // うにネットはPOST-REDIRECT-GETを使っているので並列に取得してはいけない
                     var XHR = await fetchLevelRecord(i);
-                    extractScore(XHR.response);
+                    this.extractScore(XHR.response);
                 }
             })();
 
@@ -73,7 +74,23 @@
             return Promise.all([p, q])
                 .then(() => {
                     this.calcRatings();
+                    return this._musicData;
                 });
+        }
+
+        // レコード一覧ページから譜面のスコアを抽出してmusicDataに突っ込む
+        extractScore(recordDoc) {
+            for (let musicElement of recordDoc.querySelectorAll('.musiclist_box')) {
+                let scoreOuterElement = musicElement.querySelector('.play_musicdata_highscore');
+                if (scoreOuterElement === null) {
+                    continue;
+                }
+
+                let difficulty = musicElement.classList.contains('bg_expert') ? 2 : 3; // Lv12以上にADVANCEDが来たら終わる
+                let title = musicElement.querySelector('.music_title').innerText;
+                let score = scoreOuterElement.querySelector('.text_b').innerText;
+                this._musicData.push({difficulty: difficulty, title: title, score: parseInt(score.replace(/,/g, ''), 10)});
+            }
         }
     }
 
@@ -95,21 +112,6 @@
             XHR.responseType = 'document';
             XHR.send(formData || null);
         });
-    };
-
-    // レコード一覧ページから譜面のスコアを抽出してmusicDataに突っ込む
-    var extractScore = function(recordDoc) {
-        for (let musicElement of recordDoc.querySelectorAll('.musiclist_box')) {
-            let scoreOuterElement = musicElement.querySelector('.play_musicdata_highscore');
-            if (scoreOuterElement === null) {
-                continue;
-            }
-
-            let difficulty = musicElement.classList.contains('bg_expert') ? 2 : 3; // Lv12以上にADVANCEDが来たら終わる
-            let title = musicElement.querySelector('.music_title').innerText;
-            let score = scoreOuterElement.querySelector('.text_b').innerText;
-            musicData.push({difficulty: difficulty, title: title, score: parseInt(score.replace(/,/g, ''), 10)});
-        }
     };
 
     // CHUNITHM【チュウニズム】攻略wikiから譜面定数を引っ張ってくる
@@ -164,10 +166,8 @@
         };
     };
 
-    var musicData = [];
-
     var collector = new PlayDataCollector();
-    await collector.musicData;
+    var musicData = await collector.musicData;
     musicData.sort(function(a, b) {
         if (isNaN(a.rating)) {
             return -1;

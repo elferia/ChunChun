@@ -113,6 +113,7 @@
                 messagingSenderId: '1046740590552'
             });
             this.auth = firebase.auth();
+            this.db = firebase.firestore();
             this.signInButton = createButton('Sign in');
             this.signOutButton = createButton('Sign out');
 
@@ -128,9 +129,11 @@
 
         onAuthStateChanged(user) {
             if (user) {
+                this.userDoc = this.db.collection('users').doc(user.uid);
                 this.signInButton.setAttribute('hidden', 'hidden');
                 this.signOutButton.removeAttribute('hidden');
             } else {
+                this.userDoc = null;
                 this.signOutButton.setAttribute('hidden', 'hidden');
                 this.signInButton.removeAttribute('hidden');
             }
@@ -142,6 +145,36 @@
 
         signOut() {
             this.auth.signOut();
+        }
+
+        storePlayData(playData) {
+            var serialize = (title, difficulty) => title.replace(/[/.]/g, '_') + difficulty;
+
+            if (!this.userDoc) {
+                return;
+            }
+
+            this.signOutButton.setAttribute('disabled', 'disabled');
+            var signOutLabel = this.signOutButton.textContent;
+            this.signOutButton.textContent = 'Please Wait...';
+            var ps = [];
+            var now = new Date();
+            for (let data of playData) {
+                ps.push(
+                    this.userDoc.collection('plays').doc(serialize(data.title, data.difficulty)).collection('playData').add({
+                        stored: now,
+                        score: data.score,
+                        rating: data.rating
+                    })
+                        .catch((e) => console.error('failed to store ' + data.title + data.difficulty, e))
+                );
+            }
+
+            Promise.all(ps)
+                .then(() => {
+                    this.signOutButton.textContent = signOutLabel;
+                    this.signOutButton.removeAttribute('disabled');
+                });
         }
     }
 
@@ -220,6 +253,7 @@
     var store = new PlayDataStore();
     var collector = new PlayDataCollector();
     var musicData = await collector.musicData;
+    store.storePlayData(musicData);
     musicData.sort(function(a, b) {
         if (isNaN(a.rating)) {
             return -1;

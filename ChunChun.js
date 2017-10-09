@@ -1,3 +1,5 @@
+/* globals firebase */
+
 (async function() {
     'use strict';
 
@@ -94,6 +96,55 @@
         }
     }
 
+    class PlayDataStore {
+        constructor() {
+            var createButton = (label) => {
+                var button = document.createElement('button');
+                button.textContent = label;
+                return button;
+            };
+
+            firebase.initializeApp({
+                apiKey: 'AIzaSyDtAK2UZTBto-2toH2o-02NdR976nl4CZM',
+                authDomain: 'chunchun-5bd4a.firebaseapp.com',
+                databaseURL: 'https://chunchun-5bd4a.firebaseio.com',
+                projectId: 'chunchun-5bd4a',
+                storageBucket: 'chunchun-5bd4a.appspot.com',
+                messagingSenderId: '1046740590552'
+            });
+            this.auth = firebase.auth();
+            this.signInButton = createButton('Sign in');
+            this.signOutButton = createButton('Sign out');
+
+            this.auth.onAuthStateChanged((user) => this.onAuthStateChanged(user));
+            this.signInButton.addEventListener('click', () => this.signIn());
+            this.signOutButton.addEventListener('click', () => this.signOut());
+
+            var div = document.createElement('div');
+            div.appendChild(this.signInButton);
+            div.appendChild(this.signOutButton);
+            document.body.insertBefore(div, document.body.firstChild);
+        }
+
+        onAuthStateChanged(user) {
+            if (user) {
+                this.signInButton.setAttribute('hidden', 'hidden');
+                this.signOutButton.removeAttribute('hidden');
+            } else {
+                this.signOutButton.setAttribute('hidden', 'hidden');
+                this.signInButton.removeAttribute('hidden');
+            }
+        }
+
+        signIn() {
+            this.auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
+        }
+
+        signOut() {
+            this.auth.signOut();
+        }
+    }
+
     // 指定したレベルの譜面のスコアを取りに行く
     var fetchLevelRecord = function(level) {
         var FD = new FormData();
@@ -166,6 +217,7 @@
         };
     };
 
+    var store = new PlayDataStore();
     var collector = new PlayDataCollector();
     var musicData = await collector.musicData;
     musicData.sort(function(a, b) {

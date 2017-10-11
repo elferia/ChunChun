@@ -176,7 +176,24 @@
                     this.signOutButton.removeAttribute('disabled');
                 });
         }
+
+        static async getInstance() {
+            await getScriptLoadPromise('https://www.gstatic.com/firebasejs/4.5.0/firebase.js');
+            await getScriptLoadPromise('https://www.gstatic.com/firebasejs/4.5.0/firebase-firestore.js');
+            return new PlayDataStore();
+        }
     }
+
+    var getScriptLoadPromise = (url) => {
+        return new Promise((resolve, reject) => {
+            var elem = document.createElement('script');
+            elem.src = url;
+            elem.addEventListener('load', function() {
+                resolve();
+            });
+            document.body.appendChild(elem);
+        });
+    };
 
     // 指定したレベルの譜面のスコアを取りに行く
     var fetchLevelRecord = function(level) {
@@ -250,10 +267,12 @@
         };
     };
 
-    var store = new PlayDataStore();
+    var storePromise = PlayDataStore.getInstance();
     var collector = new PlayDataCollector();
     var musicData = await collector.musicData;
-    store.storePlayData(musicData);
+    storePromise.then((store) => {
+        store.storePlayData(musicData);
+    });
     musicData.sort(function(a, b) {
         if (isNaN(a.rating)) {
             return -1;

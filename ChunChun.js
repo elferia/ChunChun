@@ -114,6 +114,7 @@
             });
             this.auth = firebase.auth();
             this.db = firebase.firestore();
+            this.playCol = this.db.collection('plays');
             this.signInButton = createButton('Sign in');
             this.signOutButton = createButton('Sign out');
 
@@ -160,13 +161,30 @@
             var ps = [];
             var now = new Date();
             for (let data of playData) {
+                let playName = serialize(data.title, data.difficulty);
                 ps.push(
-                    this.userDoc.collection('plays').doc(serialize(data.title, data.difficulty)).collection('playData').add({
+                    this.userDoc.collection('plays').doc(playName).collection('playData').add({
                         stored: now,
                         score: data.score,
                         rating: data.rating
                     })
-                        .catch((e) => console.error('failed to store ' + data.title + data.difficulty, e))
+                        .catch((e) => console.error('failed to store user data' + data.title + data.difficulty, e))
+                );
+
+                let playDoc = this.playCol.doc(playName);
+                ps.push(
+                    playDoc.set({
+                        title: data.title,
+                        difficulty: data.difficulty
+                    })
+                        .catch((e) => console.error('failed to store global data' + data.title + data.difficulty, e))
+                );
+                ps.push(
+                    playDoc.collection('temporal').add({
+                        stored: now,
+                        detailedLevel: data.dLevel
+                    })
+                        .catch((e) => console.error('failed to store global temporal data' + data.title + data.difficulty, e))
                 );
             }
 
